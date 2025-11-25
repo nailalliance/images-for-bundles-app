@@ -1,11 +1,28 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, MenuItem, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
 // Hardcoded paths based on your request
-const PHP_PATH = '/usr/local/bin/php';
-const CONSOLE_PATH = '/Users/fabiannino/Developer/images-for-bundles/bin/console';
+// const PHP_PATH = '/usr/local/bin/php';
+const binaryPath = path.join(process.resourcesPath, 'bin');
+let PHP_PATH = binaryPath + '/frankenphp';
+PHP_PATH = `'${PHP_PATH}' php-cli`;
+// const CONSOLE_PATH = 'bin/images-for-bundles/bin/console';
+let CONSOLE_PATH = binaryPath + '/php_backend/bin/console';
+CONSOLE_PATH = `'${CONSOLE_PATH}'`;
+
+const menu = new Menu();
+menu.append(new MenuItem({
+    label: 'NA Image Generator',
+    submenu: [{
+        role: 'quit',
+        accelerator: 'Cmd+Q',
+        click: () => app.quit()
+    }]
+}));
+
+Menu.setApplicationMenu(menu);
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -49,9 +66,16 @@ ipcMain.handle('run-generation', async (event, { bottlesDir, swatchesDir, output
         };
 
         const bottlePaths = getImagePaths(bottlesDir);
-        const swatchPaths = getImagePaths(swatchesDir);
+        let swatchPaths = [];
+        if (type !== 'bottles' && type !== 'bottles-combined')
+        {
+            swatchPaths = getImagePaths(swatchesDir);
+            if (swatchPaths.length === 0) {
+                throw new Error('No images found in one of the selected directories.');
+            }
+        }
 
-        if (bottlePaths.length === 0 || swatchPaths.length === 0) {
+        if (bottlePaths.length === 0) {
             throw new Error('No images found in one of the selected directories.');
         }
 
